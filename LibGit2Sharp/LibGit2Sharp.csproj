@@ -113,7 +113,7 @@
     <Compile Include="RebaseOperationImpl.cs" />
     <Compile Include="RebaseOptions.cs" />
     <Compile Include="RebaseResult.cs" />
-    <Compile Include="RebaseOperation.cs" />
+    <Compile Include="Rebase.cs" />
     <Compile Include="RebaseStepInfo.cs" />
     <Compile Include="RefSpec.cs" />
     <Compile Include="RefSpecCollection.cs" />
