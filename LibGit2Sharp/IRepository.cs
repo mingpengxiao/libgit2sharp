@@ -223,17 +223,6 @@ namespace LibGit2Sharp
         MergeResult Merge(string committish, Signature merger, MergeOptions options);
 
         /// <summary>
-        /// Perform a rebase.
-        /// </summary>
-        /// <param name="branch">The branch to rebase.</param>
-        /// <param name="upstream">The starting commit to rebase.</param>
-        /// <param name="onto">The branch to rebase onto.</param>
-        /// <param name="committer"></param>
-        /// <param name="options"></param>
-        /// <returns>true if completed successfully, false if conflicts encountered.</returns>
-        RebaseResult Rebase(Branch branch, Branch upstream, Branch onto, Signature committer, RebaseOptions options);
-
-        /// <summary>
         /// Access to Rebase functionality.
         /// </summary>
         Rebase RebaseOperation { get; }

@@ -65,6 +65,100 @@ namespace LibGit2Sharp
         }
 
         /// <summary>
+        /// Start a rebase operation.
+        /// </summary>
+        /// <param name="branch">The branch to rebase.</param>
+        /// <param name="upstream">The starting commit to rebase.</param>
+        /// <param name="onto">The branch to rebase onto.</param>
+        /// <param name="committer"></param>
+        /// <param name="options"></param>
+        /// <returns>true if completed successfully, false if conflicts encountered.</returns>
+        public virtual RebaseResult Start(Branch branch, Branch upstream, Branch onto, Signature committer, RebaseOptions options)
+        {
+            Ensure.ArgumentNotNull(upstream, "upstream");
+
+            options = options ?? new RebaseOptions();
+
+            if (this.repository.Info.CurrentOperation != CurrentOperation.None)
+            {
+                throw new LibGit2SharpException(string.Format(
+                    "A {0} operation is already in progress.", this.repository.Info.CurrentOperation));
+            }
+
+            ReferenceSafeHandle branchRefPtr = null;
+            ReferenceSafeHandle upstreamRefPtr = null;
+            ReferenceSafeHandle ontoRefPtr = null;
+
+            GitAnnotatedCommitHandle annotatedBranchCommitHandle = null;
+            GitAnnotatedCommitHandle annotatedUpstreamRefPtrCommitHandle = null;
+            GitAnnotatedCommitHandle annotatedOntoRefPtrCommitHandle = null;
+
+            RebaseSafeHandle rebaseOperationHandle = null;
+
+            try
+            {
+                branchRefPtr = (branch == null) ?
+                    this.repository.Refs.RetrieveReferencePtr(this.repository.Head.CanonicalName) :
+                    this.repository.Refs.RetrieveReferencePtr(branch.CanonicalName);
+
+                upstreamRefPtr = (upstream == null) ?
+                    null : this.repository.Refs.RetrieveReferencePtr(upstream.CanonicalName);
+
+                ontoRefPtr = (onto == null) ?
+                    null : this.repository.Refs.RetrieveReferencePtr(onto.CanonicalName);
+
+                annotatedBranchCommitHandle = (branchRefPtr == null) ?
+                    new GitAnnotatedCommitHandle() :
+                    Proxy.git_annotated_commit_from_ref(this.repository.Handle, branchRefPtr);
+
+                annotatedUpstreamRefPtrCommitHandle = (upstreamRefPtr == null) ?
+                    new GitAnnotatedCommitHandle() :
+                    Proxy.git_annotated_commit_from_ref(this.repository.Handle, upstreamRefPtr);
+
+                annotatedOntoRefPtrCommitHandle = (ontoRefPtr == null) ?
+                    new GitAnnotatedCommitHandle() :
+                    Proxy.git_annotated_commit_from_ref(this.repository.Handle, ontoRefPtr);
+
+                GitRebaseOptions gitRebaseOptions = new GitRebaseOptions()
+                {
+                    version = 1,
+                };
+
+                rebaseOperationHandle = Proxy.git_rebase_init(this.repository.Handle,
+                    annotatedBranchCommitHandle,
+                    annotatedUpstreamRefPtrCommitHandle,
+                    annotatedOntoRefPtrCommitHandle,
+                    null, ref gitRebaseOptions);
+
+                RebaseResult rebaseResult =
+                    RebaseOperationImpl.Run(rebaseOperationHandle, 
+                                            this.repository,
+                                            committer,
+                                            options);
+                return rebaseResult;
+            }
+            finally
+            {
+                branchRefPtr.SafeDispose();
+                branchRefPtr = null;
+                upstreamRefPtr.SafeDispose();
+                upstreamRefPtr = null;
+                ontoRefPtr.SafeDispose();
+                ontoRefPtr = null;
+
+                annotatedBranchCommitHandle.SafeDispose();
+                annotatedBranchCommitHandle = null;
+                annotatedUpstreamRefPtrCommitHandle.SafeDispose();
+                annotatedUpstreamRefPtrCommitHandle = null;
+                annotatedOntoRefPtrCommitHandle.SafeDispose();
+                annotatedOntoRefPtrCommitHandle = null;
+
+                rebaseOperationHandle.SafeDispose();
+                rebaseOperationHandle = null;
+            }
+        }
+
+        /// <summary>
         /// Continue the current rebase.
         /// </summary>
         /// <param name="committer">The <see cref="Signature"/> of who added the change to the repository.</param>

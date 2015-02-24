@@ -47,7 +47,7 @@ namespace LibGit2Sharp.Tests
                     RebaseStepCompleted = x => afterStepCallCount++,
                 };
 
-                RebaseResult rebaseResult = repo.Rebase(branch, upstream, onto, Constants.Signature, options);
+                RebaseResult rebaseResult = repo.RebaseOperation.Start(branch, upstream, onto, Constants.Signature, options);
 
                 // Validation:
                 Assert.Equal(RebaseStatus.Complete, rebaseResult.Status);
@@ -90,7 +90,7 @@ namespace LibGit2Sharp.Tests
                     RebaseStepCompleted = x => afterStepCallCount++,
                 };
 
-                RebaseResult rebaseResult = repo.Rebase(branch, upstream, onto, Constants.Signature, options);
+                RebaseResult rebaseResult = repo.RebaseOperation.Start(branch, upstream, onto, Constants.Signature, options);
 
                 // Verify that we have a conflict.
                 Assert.Equal(CurrentOperation.RebaseMerge, repo.Info.CurrentOperation);
@@ -146,7 +146,7 @@ namespace LibGit2Sharp.Tests
                 Branch upstream = repo.Branches[conflictBranch1Name];
                 Branch onto = repo.Branches[conflictBranch1Name];
 
-                RebaseResult rebaseResult = repo.Rebase(branch, upstream, onto, Constants.Signature, null);
+                RebaseResult rebaseResult = repo.RebaseOperation.Start(branch, upstream, onto, Constants.Signature, null);
 
                 // Verify that we have a conflict.
                 Assert.Equal(RebaseStatus.Conflicts, rebaseResult.Status);
@@ -178,7 +178,7 @@ namespace LibGit2Sharp.Tests
                 Branch upstream = repo.Branches[conflictBranch1Name];
                 Branch onto = repo.Branches[conflictBranch1Name];
 
-                RebaseResult rebaseResult = repo.Rebase(branch, upstream, onto, Constants.Signature, null);
+                RebaseResult rebaseResult = repo.RebaseOperation.Start(branch, upstream, onto, Constants.Signature, null);
 
                 // Verify that we have a conflict.
                 Assert.Equal(RebaseStatus.Conflicts, rebaseResult.Status);
@@ -210,7 +210,7 @@ namespace LibGit2Sharp.Tests
                 Branch upstream = repo.Branches[conflictBranch1Name];
                 Branch onto = repo.Branches[conflictBranch1Name];
 
-                RebaseResult rebaseResult = repo.Rebase(branch, upstream, onto, Constants.Signature, null);
+                RebaseResult rebaseResult = repo.RebaseOperation.Start(branch, upstream, onto, Constants.Signature, null);
 
                 // Verify that we have a conflict.
                 Assert.Equal(RebaseStatus.Conflicts, rebaseResult.Status);
@@ -218,7 +218,7 @@ namespace LibGit2Sharp.Tests
                 Assert.Equal(CurrentOperation.RebaseMerge, repo.Info.CurrentOperation);
 
                 Assert.Throws<LibGit2SharpException>(() =>
-                    repo.Rebase(branch, upstream, onto, Constants.Signature, null));
+                    repo.RebaseOperation.Start(branch, upstream, onto, Constants.Signature, null));
                 }
         }
 
