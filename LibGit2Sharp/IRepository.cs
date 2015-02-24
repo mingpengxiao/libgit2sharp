@@ -225,7 +225,7 @@ namespace LibGit2Sharp
         /// <summary>
         /// Access to Rebase functionality.
         /// </summary>
-        Rebase RebaseOperation { get; }
+        Rebase Rebase { get; }
 
         /// <summary>
         /// Merge the reference that was recently fetched. This will merge

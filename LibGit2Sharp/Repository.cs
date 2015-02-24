@@ -260,9 +260,9 @@ namespace LibGit2Sharp
         }
 
         /// <summary>
-        /// Provides access to network functionality for a repository.
+        /// Provides access to rebase functionality for a repository.
         /// </summary>
-        public Rebase RebaseOperation
+        public Rebase Rebase
         {
             get
             {
