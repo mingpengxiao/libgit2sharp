@@ -644,8 +644,13 @@ namespace LibGit2Sharp
 
                     foreach (var sm in repo.Submodules)
                     {
-                        string fullSubmodulePath = Path.Combine(parentRepoWorkDir, sm.Path);
+                        // Only clone submodules that have an entry in the index.
+                        if (!sm.RetrieveStatus().HasFlag(SubmoduleStatus.InIndex))
+                        {
+                            continue;
+                        }
 
+                        string fullSubmodulePath = Path.Combine(parentRepoWorkDir, sm.Path);
 
                         // Resolve the URL in the .gitmodule file to the one actually used
                         // to clone
