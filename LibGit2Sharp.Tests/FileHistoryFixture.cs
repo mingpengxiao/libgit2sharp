@@ -178,68 +178,48 @@ namespace LibGit2Sharp.Tests
 
             using (Repository repo = new Repository(repoPath))
             {
-                List<Commit> commits = new List<Commit>();
-                var dummy = "\n" + new string('a', 1024) +"\n";
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Before merge" + dummy, "0. Initial commit for this test"));
+                var master0 = AddCommitToOdb(repo, "0. Initial commit for this test", path, "Before merge");
 
-                Branch fixBranch = repo.CreateBranch("fix", GetNextSignature());
+                var fix1 = AddCommitToOdb(repo, "1. Changed on fix", path, "Change on fix branch", master0);
 
-                repo.Checkout("fix");
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Change on fix branch" + dummy, "1. Changed on fix"));
+                var master2 = AddCommitToOdb(repo, "2. Changed on master", path, "Independent change on master branch", master0);
 
-                repo.Checkout("master");
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Independent change on master branch" + dummy, "2. Changed on master"));
-
-                repo.Checkout("fix");
-                var oldpath = path;
                 path += ".new";
-                repo.Move(oldpath, path);
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Another change on fix branch" + dummy, "3. Changed on fix"));
 
-                repo.Checkout("master");
-                repo.Move(oldpath, path);
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Another independent change on master branch" + dummy, "4. Changed on master"));
+                var fix3 = AddCommitToOdb(repo, "3. Changed on fix", path, "Another change on fix branch", fix1);
 
-                MergeResult mergeResult = repo.Merge("fix", GetNextSignature());
-                if (mergeResult.Status == MergeStatus.Conflicts)
-                {
-                    repo.Index.Remove(oldpath);
-                    commits.Add(MakeAndCommitChange(repo, repoPath, path, "Manual resolution of merge conflict", "5. Merged fix into master"));
-                }
+                var master4 = AddCommitToOdb(repo, "4. Changed on master", path, "Another independent change on master branch", master2);
 
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Change after merge" + dummy, "6. Changed on master"));
+                var master5 = AddCommitToOdb(repo, "5. Merged fix into master", path, "Manual resolution of merge conflict", master4, fix3);
 
-                repo.CreateBranch("next-fix", GetNextSignature());
+                var master6 = AddCommitToOdb(repo, "6. Changed on master", path, "Change after merge", master5);
 
-                repo.Checkout("next-fix");
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Change on next-fix branch" + dummy, "7. Changed on next-fix"));
+                var nextfix7 = AddCommitToOdb(repo, "7. Changed on next-fix", path, "Change on next-fix branch", master6);
 
-                repo.Checkout("master");
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Some arbitrary change on master branch" + dummy, "8. Changed on master"));
+                var master8 = AddCommitToOdb(repo, "8. Changed on master", path, "Some arbitrary change on master branch", master6);
 
-                mergeResult = repo.Merge("next-fix", GetNextSignature());
-                if (mergeResult.Status == MergeStatus.Conflicts)
-                {
-                    commits.Add(MakeAndCommitChange(repo, repoPath, path, "Another manual resolution of merge conflict" + dummy, "9. Merged next-fix into master"));
-                }
+                var master9 = AddCommitToOdb(repo, "9. Merged next-fix into master", path, "Another manual resolution of merge conflict", master8, nextfix7);
 
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "A change on master after merging" + dummy, "10. Changed on master"));
+                var master10 = AddCommitToOdb(repo, "10. Changed on master", path, "A change on master after merging", master9);
+
+                repo.CreateBranch("master", master10, GetNextSignature());
+                repo.Checkout("master", new CheckoutOptions { CheckoutModifiers = CheckoutModifiers.Force });
 
                 // Test --date-order.
                 IEnumerable<FileHistoryEntry> timeHistory = repo.Follow(path, new CommitFilter { SortBy = CommitSortStrategies.Time });
                 List<Commit> timeCommits = new List<Commit>
                 {
-                    commits[10],    // master
+                    master10, // master
 
-                    commits[8],     // master
-                        commits[7],     // next-fix
-                    commits[6],     // master
+                    master8, // master
+                        nextfix7, // next-fix
+                    master6, // master
 
-                    commits[4],     // master
-                        commits[3],     // fix
-                    commits[2],     // master
-                        commits[1],     // fix
-                    commits[0]      // master (initial commit)
+                    master4, // master
+                        fix3, // fix
+                    master2, // master
+                        fix1, // fix
+                    master0 // master (initial commit)
                 };
                 Assert.Equal<Commit>(timeCommits, timeHistory.Select(e => e.Commit));
                 Assert.Equal(timeHistory.Count(), timeHistory.ExcludeRenames().Count());
@@ -248,21 +228,36 @@ namespace LibGit2Sharp.Tests
                 IEnumerable<FileHistoryEntry> topoHistory = repo.Follow(path, new CommitFilter { SortBy = CommitSortStrategies.Topological });
                 List<Commit> topoCommits = new List<Commit>
                 {
-                    commits[10],    // master
+                    master10, // master
 
-                        commits[7],     // next-fix
-                    commits[8],     // master
-                    commits[6],     // master
+                        nextfix7, // next-fix
+                    master8, // master
+                    master6, // master
 
-                        commits[3],     // fix
-                        commits[1],     // fix
-                    commits[4],     // master
-                    commits[2],     // master
-                    commits[0]      // master (initial commit)
+                        fix3, // fix
+                        fix1, // fix
+                    master4, // master
+                    master2, // master
+                    master0 // master (initial commit)
                 };
                 Assert.Equal<Commit>(topoCommits, topoHistory.Select(e => e.Commit));
                 Assert.Equal(topoHistory.Count(), topoHistory.ExcludeRenames().Count());
             }
+        }
+
+        private Commit AddCommitToOdb(Repository repo, string message, string path, string content, params Commit[] parents)
+        {
+            string dummy = "\n" + new string('a', 1024) + "\n";
+
+            TreeDefinition td = new TreeDefinition();
+            td.Add(path, OdbHelper.CreateBlob(repo, content + dummy), Mode.NonExecutableFile);
+
+            Signature commitSignature = GetNextSignature();
+
+            Tree t = repo.ObjectDatabase.CreateTree(td);
+
+            return repo.ObjectDatabase.CreateCommit(commitSignature, commitSignature, message, t,
+                parents, true);
         }
 
         #region Helpers
