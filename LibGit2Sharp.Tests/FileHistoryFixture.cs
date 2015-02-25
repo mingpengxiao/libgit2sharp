@@ -179,46 +179,51 @@ namespace LibGit2Sharp.Tests
             using (Repository repo = new Repository(repoPath))
             {
                 List<Commit> commits = new List<Commit>();
-
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Before merge", "0. Initial commit for this test"));
+                var dummy = "\n" + new string('a', 1024) +"\n";
+                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Before merge" + dummy, "0. Initial commit for this test"));
 
                 Branch fixBranch = repo.CreateBranch("fix", GetNextSignature());
 
                 repo.Checkout("fix");
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Change on fix branch", "1. Changed on fix"));
+                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Change on fix branch" + dummy, "1. Changed on fix"));
 
                 repo.Checkout("master");
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Independent change on master branch", "2. Changed on master"));
+                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Independent change on master branch" + dummy, "2. Changed on master"));
 
                 repo.Checkout("fix");
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Another change on fix branch", "3. Changed on fix"));
+                var oldpath = path;
+                path += ".new";
+                repo.Move(oldpath, path);
+                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Another change on fix branch" + dummy, "3. Changed on fix"));
 
                 repo.Checkout("master");
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Another independent change on master branch", "4. Changed on master"));
+                repo.Move(oldpath, path);
+                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Another independent change on master branch" + dummy, "4. Changed on master"));
 
                 MergeResult mergeResult = repo.Merge("fix", GetNextSignature());
                 if (mergeResult.Status == MergeStatus.Conflicts)
                 {
+                    repo.Index.Remove(oldpath);
                     commits.Add(MakeAndCommitChange(repo, repoPath, path, "Manual resolution of merge conflict", "5. Merged fix into master"));
                 }
 
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Change after merge", "6. Changed on master"));
+                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Change after merge" + dummy, "6. Changed on master"));
 
                 repo.CreateBranch("next-fix", GetNextSignature());
 
                 repo.Checkout("next-fix");
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Change on next-fix branch", "7. Changed on next-fix"));
+                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Change on next-fix branch" + dummy, "7. Changed on next-fix"));
 
                 repo.Checkout("master");
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Some arbitrary change on master branch", "8. Changed on master"));
+                commits.Add(MakeAndCommitChange(repo, repoPath, path, "Some arbitrary change on master branch" + dummy, "8. Changed on master"));
 
                 mergeResult = repo.Merge("next-fix", GetNextSignature());
                 if (mergeResult.Status == MergeStatus.Conflicts)
                 {
-                    commits.Add(MakeAndCommitChange(repo, repoPath, path, "Another manual resolution of merge conflict", "9. Merged next-fix into master"));
+                    commits.Add(MakeAndCommitChange(repo, repoPath, path, "Another manual resolution of merge conflict" + dummy, "9. Merged next-fix into master"));
                 }
 
-                commits.Add(MakeAndCommitChange(repo, repoPath, path, "A change on master after merging", "10. Changed on master"));
+                commits.Add(MakeAndCommitChange(repo, repoPath, path, "A change on master after merging" + dummy, "10. Changed on master"));
 
                 // Test --date-order.
                 IEnumerable<FileHistoryEntry> timeHistory = repo.Follow(path, new CommitFilter { SortBy = CommitSortStrategies.Time });
