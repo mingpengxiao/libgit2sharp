@@ -431,6 +431,8 @@ namespace LibGit2Sharp
                 using (ancestorHandle)
                 using (var indexHandle = Proxy.git_merge_trees(repo.Handle, ancestorHandle, ourHandle, theirHandle))
                 {
+                    if (indexHandle == null) return false;
+
                     return !Proxy.git_index_has_conflicts(indexHandle);
                 }
             }
